@@ -10,6 +10,7 @@ public class LobbyUI : MonoBehaviour
         joinInput.interactable = false;
         joinButton.interactable = false;
         hostButton.interactable = false;
+        MainMenuPlayer.localPlayer.HostGame();
     }
 
     public void Join(){
