@@ -1,6 +1,7 @@
 using UnityEngine;
 using Unity.Netcode;
-public class PlayerHandler : MonoBehaviour
+
+public class PlayerHandler : NetworkBehaviour
 {
     public GameObject cam;
     public Material pm;
