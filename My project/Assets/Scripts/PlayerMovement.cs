@@ -1,65 +1,62 @@
 using UnityEngine;
 
+[RequireComponent(typeof(Rigidbody))]
 public class PlayerMovement : MonoBehaviour
 {
-    [Header("Referenzen")]
-    [Tooltip("Transform der Kamera (wird fuer die Bewegungsrichtung genutzt)")]
-    public Transform cameraTransform;
-
-    [Header("Bewegung")]
-    [Tooltip("Grund-Geschwindigkeit in Einheiten/Sekunde")]
     public float walkSpeed = 5f;
-    [Tooltip("Multiplikator, wenn Shift gedrueckt wird")]
     public float sprintMultiplier = 2f;
-
-    [Header("Sprung")]
-    [Tooltip("Kraft des Sprungs")]
     public float jumpForce = 5f;
-    [Tooltip("Wie weit nach unten fuer Bodenkontakt pruefen")]
     public float groundCheckDistance = 0.1f;
-    [Tooltip("Layer, die als Boden gelten")]
     public LayerMask groundMask;
+    public float mouseSensitivity = 2f;
+    public float rotationSmoothSpeed = 10f;
 
     private Rigidbody rb;
+    private Collider col;
+    private float distToGround;
     private bool isGrounded;
-    private Vector3 horizontalVelocity;
+    private bool jumpRequest;
+    private float targetYaw;
 
     void Awake()
     {
         rb = GetComponent<Rigidbody>();
+        col = GetComponent<Collider>();
+        rb.constraints = RigidbodyConstraints.FreezeRotation;
+        distToGround = col.bounds.extents.y;
+        targetYaw = transform.eulerAngles.y;
     }
 
     void Update()
     {
+        if (Input.GetMouseButton(1))
+        {
+            float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity;
+            targetYaw += mouseX;
+        }
+
+        Quaternion desiredRot = Quaternion.Euler(0f, targetYaw, 0f);
+        transform.rotation = Quaternion.Slerp(transform.rotation, desiredRot, rotationSmoothSpeed * Time.deltaTime);
+
         isGrounded = Physics.Raycast(
             transform.position,
             Vector3.down,
-            groundCheckDistance + 0.01f,
+            distToGround + groundCheckDistance,
             groundMask
         );
 
+        if (Input.GetButtonDown("Jump") && isGrounded)
+        {
+            jumpRequest = true;
+        }
+    }
+
+    void FixedUpdate()
+    {
         float h = Input.GetAxis("Horizontal");
         float v = Input.GetAxis("Vertical");
 
-        Vector3 camForward = Vector3.zero;
-        Vector3 camRight = Vector3.zero;
-        if (cameraTransform != null)
-        {
-            camForward = cameraTransform.forward;
-            camForward.y = 0f;
-            camForward.Normalize();
-
-            camRight = cameraTransform.right;
-            camRight.y = 0f;
-            camRight.Normalize();
-        }
-        else
-        {
-            camForward = Vector3.forward;
-            camRight = Vector3.right;
-        }
-
-        Vector3 moveDir = camForward * v + camRight * h;
+        Vector3 moveDir = transform.forward * v + transform.right * h;
         if (moveDir.magnitude > 1f)
             moveDir.Normalize();
 
@@ -68,29 +65,20 @@ public class PlayerMovement : MonoBehaviour
         {
             currentSpeed *= sprintMultiplier;
         }
-        Vector3 desiredMove = moveDir * currentSpeed;
 
-        if (Input.GetButtonDown("Jump") && isGrounded)
+        Vector3 moveVelocity = moveDir * currentSpeed;
+        Vector3 newVelocity = new Vector3(
+            moveVelocity.x,
+            rb.linearVelocity.y,
+            moveVelocity.z
+        );
+
+        if (jumpRequest)
         {
-            Vector3 vel = rb.linearVelocity;
-            vel.y = jumpForce;
-            rb.linearVelocity = vel;
+            newVelocity.y = jumpForce;
+            jumpRequest = false;
         }
 
-        horizontalVelocity = new Vector3(desiredMove.x, rb.linearVelocity.y, desiredMove.z);
-    }
-
-    void FixedUpdate()
-    {
-        rb.linearVelocity = horizontalVelocity;
-    }
-
-    void OnDrawGizmosSelected()
-    {
-        Gizmos.color = Color.green;
-        Vector3 origin = transform.position;
-        Vector3 dir = Vector3.down * (groundCheckDistance + 0.01f);
-        Gizmos.DrawLine(origin, origin + dir);
-        Gizmos.DrawSphere(origin + dir, 0.05f);
+        rb.linearVelocity = newVelocity;
     }
 }
