@@ -3,7 +3,7 @@ using Unity.Netcode;
 
 public class PlayerHandler : NetworkBehaviour
 {
-    public GameObject cam;
+    //public GameObject cam;
     public Material pm;
     public PlayerMovement move;
     public NetworkVariable<int> PlayerID = new NetworkVariable<int>();
@@ -22,13 +22,13 @@ public class PlayerHandler : NetworkBehaviour
             move.enabled = true;
             GetComponent<Renderer>().material = Material.Instantiate(pm);
             GetComponent<Renderer>().material.color = Color.green;
-            cam.SetActive(true);
+            //cam.SetActive(true);
 
         }
         else
         {
             Destroy(move);
-            Destroy(cam);
+            //Destroy(cam);
             GetComponent<Renderer>().material = Material.Instantiate(pm);
             GetComponent<Renderer>().material.color = Color.red;
 
