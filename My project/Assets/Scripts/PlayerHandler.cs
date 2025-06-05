@@ -20,8 +20,8 @@ public class PlayerHandler : NetworkBehaviour
         if (IsLocalPlayer)
         {
             move.enabled = true;
-            GetComponent<Renderer>().material = Material.Instantiate(pm);
-            GetComponent<Renderer>().material.color = Color.green;
+            GetComponent<SkinnedMeshRenderer>().material = Material.Instantiate(pm);
+            GetComponent<SkinnedMeshRenderer>().material.color = Color.green;
             //cam.SetActive(true);
 
         }
@@ -29,8 +29,8 @@ public class PlayerHandler : NetworkBehaviour
         {
             Destroy(move);
             //Destroy(cam);
-            GetComponent<Renderer>().material = Material.Instantiate(pm);
-            GetComponent<Renderer>().material.color = Color.red;
+            GetComponent<SkinnedMeshRenderer>().material = Material.Instantiate(pm);
+            GetComponent<SkinnedMeshRenderer>().material.color = Color.red;
 
         }
     }

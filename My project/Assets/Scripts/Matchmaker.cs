@@ -59,7 +59,7 @@ public class Matchmaker : NetworkBehaviour
         {
             var Options = new InitializationOptions();
 
-            Options.SetProfile(UnityEngine.Random.Range(0, 1000000) + "profile");
+            Options.SetProfile(UnityEngine.Random.Range(0, 100000) + "profile");
 
             await UnityServices.InitializeAsync(Options);
 
