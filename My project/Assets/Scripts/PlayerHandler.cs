@@ -20,25 +20,31 @@ public class PlayerHandler : NetworkBehaviour
         if (IsLocalPlayer)
         {
             move.enabled = true;
-            GetComponent<SkinnedMeshRenderer>().material = Material.Instantiate(pm);
-            GetComponent<SkinnedMeshRenderer>().material.color = Color.green;
+            transform.Find("HumanM_BodyMesh").GetComponent<SkinnedMeshRenderer>().material = Material.Instantiate(pm);
+            transform.Find("HumanM_BodyMesh").GetComponent<SkinnedMeshRenderer>().material.color = Color.green;
             //cam.SetActive(true);
 
         }
         else
         {
-            Destroy(move);
+            if (move != null)
+                move.enabled = false;
             //Destroy(cam);
-            GetComponent<SkinnedMeshRenderer>().material = Material.Instantiate(pm);
-            GetComponent<SkinnedMeshRenderer>().material.color = Color.red;
+            transform.Find("HumanM_BodyMesh").GetComponent<SkinnedMeshRenderer>().material = Material.Instantiate(pm);
+            transform.Find("HumanM_BodyMesh").GetComponent<SkinnedMeshRenderer>().material.color = Color.red;
 
         }
     }
 
+    void Awake()
+    {
+        if (move == null)
+            move = GetComponent<PlayerMovement>();
+    }
     public override void OnDestroy()
     {
         NetworkObject.Despawn(true);
-        
+
     }
     public override void OnNetworkDespawn()
     {
