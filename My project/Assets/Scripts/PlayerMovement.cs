@@ -52,11 +52,13 @@ public class PlayerMovement : NetworkBehaviour
         else if (cameraTransform == null)
         {
             Debug.LogWarning("PlayerRigidbodyMovement: Keine Kamera zugewiesen und keine Main Camera gefunden.");
-        }
+        } 
     }
 
     void Update()
-    {
+    {   
+        if (!IsLocalPlayer) return;
+
         isGrounded = Physics.CheckSphere(groundCheck.position, groundCheckRadius, groundMask);
 
         horizontalInput = Input.GetAxis("Horizontal"); 
@@ -93,6 +95,8 @@ public class PlayerMovement : NetworkBehaviour
 
     void FixedUpdate()
     {
+        if (!IsLocalPlayer) return;
+
         Vector3 velocity = rb.linearVelocity;
         Vector3 targetVel = moveDirection * currentSpeed;
         targetVel.y = velocity.y;
