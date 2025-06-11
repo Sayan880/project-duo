@@ -39,7 +39,15 @@ public class PlayerMovement : NetworkBehaviour
     private float verticalInput;
 
     void Start()
-    {
+    {   
+        if (IsLocalPlayer)
+        {
+            Debug.Log("Ich bin der lokale Spieler: " + OwnerClientId);
+        }
+        else
+        {
+            Debug.Log("Ich bin NICHT der lokale Spieler: " + OwnerClientId);
+        }
         rb = GetComponent<Rigidbody>();
         rb.constraints = RigidbodyConstraints.FreezeRotationX
                        | RigidbodyConstraints.FreezeRotationZ
