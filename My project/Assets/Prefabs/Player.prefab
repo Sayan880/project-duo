@@ -872,6 +872,7 @@ GameObject:
   - component: {fileID: 1977661635934916977}
   - component: {fileID: 7763566077265079171}
   - component: {fileID: 6509862387525285243}
+  - component: {fileID: 2324276272755076003}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -980,7 +981,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 836536813
+  GlobalObjectIdHash: 1283006350
   InScenePlacedSourceGlobalObjectIdHash: 3090810146
   DeferredDespawnTick: 0
   Ownership: 1
@@ -1079,6 +1080,22 @@ MonoBehaviour:
   jumpHeight: 1.5
   rotationSpeed: 10
   groundCheckRadius: 0.2
+--- !u!114 &2324276272755076003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3269085699924671520}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 99298472d4c95db4ab92c8faad51456e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  Health:
+    m_InternalValue: 100
+  MaxHealth: 100
 --- !u!1 &3293506366842203892
 GameObject:
   m_ObjectHideFlags: 0

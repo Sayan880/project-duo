@@ -27,8 +27,7 @@ public class PlayerHandler : NetworkBehaviour
         }
         else
         {
-            if (move != null)
-                move.enabled = false;
+            Destroy(move);
             //Destroy(cam);
             transform.Find("HumanM_BodyMesh").GetComponent<SkinnedMeshRenderer>().material = Material.Instantiate(pm);
             transform.Find("HumanM_BodyMesh").GetComponent<SkinnedMeshRenderer>().material.color = Color.red;
@@ -36,11 +35,7 @@ public class PlayerHandler : NetworkBehaviour
         }
     }
 
-    void Awake()
-    {
-        if (move == null)
-            move = GetComponent<PlayerMovement>();
-    }
+    
     public override void OnDestroy()
     {
         NetworkObject.Despawn(true);
