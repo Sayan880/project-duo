@@ -1,18 +1,20 @@
-using UnityEngine;
 using Unity.Netcode;
+using Unity.Netcode.Components;
+using UnityEngine;
 using UnityEngine.SceneManagement;
 
 [RequireComponent(typeof(Rigidbody))]
+[RequireComponent(typeof(NetworkTransform))] // fuer Position/Rotation-Sync
 public class PlayerMovement : NetworkBehaviour
 {
     [Header("Referenzen")]
     [Tooltip("Ziehen: Hauptkamera (Main Camera) hierher.")]
     public Transform cameraTransform;
 
-    [Tooltip("Ziehen: GroundCheck-Objekt (als Kind-Transform des Spielers), positioniert nahe der F��e.")]
+    [Tooltip("Ziehen: GroundCheck-Objekt (als Kind-Transform des Spielers), positioniert nahe der Fuesse.")]
     public Transform groundCheck;
 
-    [Tooltip("Legen: Auf welche Layer der Boden geh�rt (z.B. Default).")]
+    [Tooltip("Legen: Auf welche Layer der Boden gehoert (z.B. Default).")]
     public LayerMask groundMask;
 
     [Header("Bewegungs-Einstellungen")]
@@ -22,13 +24,13 @@ public class PlayerMovement : NetworkBehaviour
     [Tooltip("Sprintgeschwindigkeit (Einheiten pro Sekunde).")]
     public float sprintSpeed = 9f;
 
-    [Tooltip("Sprungh�he (ungef�hr, in Unity-Einheiten).")]
+    [Tooltip("Sprunghoehe (ungefuehr, in Unity-Einheiten).")]
     public float jumpHeight = 1.5f;
 
     [Tooltip("Wie schnell sich der Spieler zur Bewegungsrichtung dreht.")]
     public float rotationSpeed = 10f;
 
-    [Tooltip("Radius f�r die Boden-Abfrage (GroundCheck).")]
+    [Tooltip("Radius fuer die Boden-Abfrage (GroundCheck).")]
     public float groundCheckRadius = 0.2f;
 
     private Rigidbody rb;
@@ -38,20 +40,22 @@ public class PlayerMovement : NetworkBehaviour
     private float horizontalInput;
     private float verticalInput;
 
-    void OnEnable()
+    public override void OnNetworkSpawn()
     {
-        SceneManager.sceneLoaded += OnSceneLoaded;
+        if (!IsLocalPlayer) return;
+        TryAssignCamera();
     }
-    void OnDisable()
+
+    void Start()
     {
-        SceneManager.sceneLoaded -= OnSceneLoaded;
-    }
-    void OnSceneLoaded(Scene scene, LoadSceneMode mode)
-    {
-        if (scene.name == "MainScene")
-        {
-            TryAssignCamera();
-        }
+        rb = GetComponent<Rigidbody>();
+        rb.constraints = RigidbodyConstraints.FreezeRotationX
+                       | RigidbodyConstraints.FreezeRotationZ;
+
+        if (IsLocalPlayer)
+            Debug.Log("Ich bin der lokale Spieler: " + OwnerClientId);
+        else
+            Debug.Log("Ich bin NICHT der lokale Spieler: " + OwnerClientId);
     }
 
     void TryAssignCamera()
@@ -59,54 +63,37 @@ public class PlayerMovement : NetworkBehaviour
         if (Camera.main != null)
         {
             cameraTransform = Camera.main.transform;
-            Debug.Log("CameraTransform gesetzt nach Szenenwechsel");
+            Debug.Log("CameraTransform gesetzt");
         }
         else
         {
             Debug.LogWarning("Keine Kamera mit MainCamera-Tag gefunden!");
         }
     }
-    void Start()
-    {   
-        if (IsLocalPlayer)
-        {
-            Debug.Log("Ich bin der lokale Spieler: " + OwnerClientId);
-        }
-        else
-        {
-            Debug.Log("Ich bin NICHT der lokale Spieler: " + OwnerClientId);
-        }
-        rb = GetComponent<Rigidbody>();
-        rb.constraints = RigidbodyConstraints.FreezeRotationX
-                       | RigidbodyConstraints.FreezeRotationZ
-                       | RigidbodyConstraints.FreezeRotationY;
-
-        
-    }
 
     void Update()
-    {   
+    {
         if (!IsLocalPlayer) return;
 
         isGrounded = Physics.CheckSphere(groundCheck.position, groundCheckRadius, groundMask);
 
-        horizontalInput = Input.GetAxis("Horizontal"); 
-        verticalInput = Input.GetAxis("Vertical");  
+        horizontalInput = Input.GetAxis("Horizontal");
+        verticalInput = Input.GetAxis("Vertical");
 
         Vector3 camForward = cameraTransform.forward;
         Vector3 camRight = cameraTransform.right;
         camForward.y = 0f;
         camRight.y = 0f;
-        camForward = camForward.normalized;
-        camRight = camRight.normalized;
+        camForward.Normalize();
+        camRight.Normalize();
 
         moveDirection = camRight * horizontalInput + camForward * verticalInput;
-        moveDirection = moveDirection.normalized; 
+        moveDirection.Normalize();
 
         bool isSprinting = Input.GetKey(KeyCode.LeftShift);
         currentSpeed = isSprinting ? sprintSpeed : walkSpeed;
 
-        if (moveDirection.magnitude >= 0.1f)
+        if (moveDirection.sqrMagnitude >= 0.01f)
         {
             Quaternion targetRot = Quaternion.LookRotation(moveDirection);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRot,
