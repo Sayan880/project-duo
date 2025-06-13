@@ -1,6 +1,6 @@
 using UnityEngine;
 using Unity.Netcode;
-
+using UnityEngine.SceneManagement;
 
 [RequireComponent(typeof(Rigidbody))]
 public class PlayerMovement : NetworkBehaviour
@@ -38,6 +38,34 @@ public class PlayerMovement : NetworkBehaviour
     private float horizontalInput;
     private float verticalInput;
 
+    void OnEnable()
+    {
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+    void OnDisable()
+    {
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+    void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        if (scene.name == "MainScene")
+        {
+            TryAssignCamera();
+        }
+    }
+
+    void TryAssignCamera()
+    {
+        if (Camera.main != null)
+        {
+            cameraTransform = Camera.main.transform;
+            Debug.Log("CameraTransform gesetzt nach Szenenwechsel");
+        }
+        else
+        {
+            Debug.LogWarning("Keine Kamera mit MainCamera-Tag gefunden!");
+        }
+    }
     void Start()
     {   
         if (IsLocalPlayer)
@@ -53,14 +81,7 @@ public class PlayerMovement : NetworkBehaviour
                        | RigidbodyConstraints.FreezeRotationZ
                        | RigidbodyConstraints.FreezeRotationY;
 
-        if (cameraTransform == null && Camera.main != null)
-        {
-            cameraTransform = Camera.main.transform;
-        }
-        else if (cameraTransform == null)
-        {
-            Debug.LogWarning("PlayerRigidbodyMovement: Keine Kamera zugewiesen und keine Main Camera gefunden.");
-        } 
+        
     }
 
     void Update()
