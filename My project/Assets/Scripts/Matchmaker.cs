@@ -104,12 +104,12 @@ public class Matchmaker : NetworkBehaviour
     }
 
     public void GoInPlayModeLobby() {
-        /*foreach (ulong pid in playersIds)
+        foreach (ulong pid in playersIds)
         {
             GameObject player = Instantiate(NetworkManager.Singleton.NetworkConfig.Prefabs.NetworkPrefabsLists[0].PrefabList[0].Prefab);
             player.GetComponent<NetworkObject>().SpawnAsPlayerObject(pid);
 
-        }*/
+        }
 
         NetworkManager.Singleton.SceneManager.LoadScene(mapId, UnityEngine.SceneManagement.LoadSceneMode.Single);
 
