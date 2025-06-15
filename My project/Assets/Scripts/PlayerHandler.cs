@@ -1,4 +1,3 @@
-// PlayerHandler.cs
 using UnityEngine;
 using Unity.Netcode;
 
@@ -7,7 +6,6 @@ public class PlayerHandler : NetworkBehaviour
     public Material pm;
     public PlayerMovement move;
 
-    // Wird vom Spawner gesetzt vor Spawn
     public Vector3 spawnPosition;
 
     public NetworkVariable<int> PlayerID = new NetworkVariable<int>();
@@ -31,7 +29,6 @@ public class PlayerHandler : NetworkBehaviour
 
         gameObject.name = $"Player{PlayerID.Value + 1}";
 
-        // Position setzen beim Netzwerk-Spawn
         transform.position = spawnPosition;
 
         if (IsOwner)
