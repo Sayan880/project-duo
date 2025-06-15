@@ -5,17 +5,33 @@ using UnityEngine.SceneManagement;
 using System.Collections;
 
 [RequireComponent(typeof(Rigidbody))]
-[RequireComponent(typeof(NetworkTransform))]
+[RequireComponent(typeof(NetworkTransform))] // fuer Position/Rotation-Sync
 public class PlayerMovement : NetworkBehaviour
 {
+    [Header("Referenzen")]
+    [Tooltip("Ziehen: Hauptkamera (Main Camera) hierher.")]
     public Transform cameraTransform;
+
+    [Tooltip("Ziehen: GroundCheck-Objekt (als Kind-Transform des Spielers), positioniert nahe der Fuesse.")]
     public Transform groundCheck;
+
+    [Tooltip("Legen: Auf welche Layer der Boden gehoert (z.B. Default).")]
     public LayerMask groundMask;
 
+    [Header("Bewegungs-Einstellungen")]
+    [Tooltip("Normale Gehgeschwindigkeit (Einheiten pro Sekunde).")]
     public float walkSpeed = 5f;
+
+    [Tooltip("Sprintgeschwindigkeit (Einheiten pro Sekunde).")]
     public float sprintSpeed = 9f;
+
+    [Tooltip("Sprunghoehe (ungefuehr, in Unity-Einheiten).")]
     public float jumpHeight = 1.5f;
+
+    [Tooltip("Wie schnell sich der Spieler zur Bewegungsrichtung dreht.")]
     public float rotationSpeed = 10f;
+
+    [Tooltip("Radius fuer die Boden-Abfrage (GroundCheck).")]
     public float groundCheckRadius = 0.2f;
 
     private Rigidbody rb;
@@ -34,7 +50,8 @@ public class PlayerMovement : NetworkBehaviour
     void Start()
     {
         rb = GetComponent<Rigidbody>();
-        rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
+        rb.constraints = RigidbodyConstraints.FreezeRotationX
+                       | RigidbodyConstraints.FreezeRotationZ;
 
         if (IsLocalPlayer)
             Debug.Log("Ich bin der lokale Spieler: " + OwnerClientId);
@@ -43,11 +60,16 @@ public class PlayerMovement : NetworkBehaviour
     }
 
     IEnumerator TryAssignCamera()
-    {
-        yield return new WaitForSeconds(0.1f);
+    {   
+        yield return new WaitForSeconds(0.1f);  
         if (Camera.main != null)
         {
             cameraTransform = Camera.main.transform;
+            Debug.Log("CameraTransform gesetzt");
+        }
+        else
+        {
+            Debug.LogWarning("Keine Kamera mit MainCamera-Tag gefunden!");
         }
     }
 
@@ -55,19 +77,7 @@ public class PlayerMovement : NetworkBehaviour
     {
         if (!IsLocalPlayer) return;
 
-        if (Physics.SphereCast(groundCheck.position, groundCheckRadius, Vector3.down, out RaycastHit hitInfo, 0.1f, groundMask))
-        {
-            isGrounded = true;
-
-            if (hitInfo.collider.gameObject.name == "Cloud Layer")
-            {
-                ReloadSceneIfOwner();
-            }
-        }
-        else
-        {
-            isGrounded = false;
-        }
+        isGrounded = Physics.CheckSphere(groundCheck.position, groundCheckRadius, groundMask);
 
         horizontalInput = Input.GetAxis("Horizontal");
         verticalInput = Input.GetAxis("Vertical");
@@ -98,9 +108,9 @@ public class PlayerMovement : NetworkBehaviour
         if (isGrounded && Input.GetButtonDown("Jump"))
         {
             float jumpVelocity = Mathf.Sqrt(jumpHeight * 2f * Mathf.Abs(Physics.gravity.y));
-            Vector3 vel = rb.linearVelocity;
+            Vector3 vel = rb.velocity;
             vel.y = jumpVelocity;
-            rb.linearVelocity = vel;
+            rb.velocity = vel;
         }
     }
 
@@ -108,10 +118,10 @@ public class PlayerMovement : NetworkBehaviour
     {
         if (!IsLocalPlayer) return;
 
-        Vector3 velocity = rb.linearVelocity;
+        Vector3 velocity = rb.velocity;
         Vector3 targetVel = moveDirection * currentSpeed;
         targetVel.y = velocity.y;
-        rb.linearVelocity = targetVel;
+        rb.velocity = targetVel;
     }
 
     void OnDrawGizmosSelected()
@@ -121,20 +131,5 @@ public class PlayerMovement : NetworkBehaviour
             Gizmos.color = Color.yellow;
             Gizmos.DrawWireSphere(groundCheck.position, groundCheckRadius);
         }
-    }
-
-    private void ReloadSceneIfOwner()
-    {
-        if (IsOwner)
-        {
-            ReloadSceneServerRpc();
-        }
-    }
-
-    [ServerRpc(RequireOwnership = false)]
-    private void ReloadSceneServerRpc()
-    {
-        string sceneName = SceneManager.GetActiveScene().name;
-        NetworkManager.Singleton.SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
     }
 }
