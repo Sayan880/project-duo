@@ -108,9 +108,9 @@ public class PlayerMovement : NetworkBehaviour
         if (isGrounded && Input.GetButtonDown("Jump"))
         {
             float jumpVelocity = Mathf.Sqrt(jumpHeight * 2f * Mathf.Abs(Physics.gravity.y));
-            Vector3 vel = rb.velocity;
+            Vector3 vel = rb.linearVelocity;
             vel.y = jumpVelocity;
-            rb.velocity = vel;
+            rb.linearVelocity = vel;
         }
     }
 
@@ -118,10 +118,10 @@ public class PlayerMovement : NetworkBehaviour
     {
         if (!IsLocalPlayer) return;
 
-        Vector3 velocity = rb.velocity;
+        Vector3 velocity = rb.linearVelocity;
         Vector3 targetVel = moveDirection * currentSpeed;
         targetVel.y = velocity.y;
-        rb.velocity = targetVel;
+        rb.linearVelocity = targetVel;
     }
 
     void OnDrawGizmosSelected()
