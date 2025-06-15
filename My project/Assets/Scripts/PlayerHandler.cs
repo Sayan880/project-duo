@@ -26,14 +26,14 @@ public class PlayerHandler : NetworkBehaviour
         {
             PlayerID.Value = pCount++;
             playerColor.Value = (PlayerID.Value == 0) ? Color.green : Color.red;
-            spawnPosition = (PlayerID.Value == 0) ? new Vector3(-9.0f, -2.0f, -22.0f) : new Vector3(-14.0f, -2.0f, -22.0f);
-
+            transform.position = (PlayerID.Value == 0)
+            ? new Vector3(-9.0f, -2.0f, -22.0f)
+            : new Vector3(-14.0f, -2.0f, -22.0f);
         }
 
         gameObject.name = $"Player{PlayerID.Value + 1}";
 
-        transform.position = spawnPosition;
-
+        
         if (IsOwner)
         {
             move.enabled = true;
