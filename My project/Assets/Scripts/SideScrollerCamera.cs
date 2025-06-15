@@ -12,12 +12,10 @@ public class SideScrollerCamera : MonoBehaviour
 
     void Start()
     {
-        var go1 = GameObject.Find(player1Name);
-        var go2 = GameObject.Find(player2Name);
-        if (go1 != null) player1 = go1.transform;
-        else Debug.LogError($"Spieler '{player1Name}' nicht gefunden!");
-        if (go2 != null) player2 = go2.transform;
-        else Debug.LogError($"Spieler '{player2Name}' nicht gefunden!");
+        player1 = GameObject.Find(player1Name)?.transform;
+        player2 = GameObject.Find(player2Name)?.transform;
+        if (player1 == null) Debug.LogError($"Spieler '{player1Name}' nicht gefunden!");
+        if (player2 == null) Debug.LogError($"Spieler '{player2Name}' nicht gefunden!");
     }
 
     void LateUpdate()
@@ -28,20 +26,11 @@ public class SideScrollerCamera : MonoBehaviour
         Vector3 targetPos = center + offset;
         transform.position = Vector3.Lerp(transform.position, targetPos, smoothSpeed);
 
-        Vector3 lookAtPos = center;
-        lookAtPos.y = transform.position.y;
-        Vector3 direction = (lookAtPos - transform.position).normalized;
-        Quaternion targetRotation = Quaternion.LookRotation(direction, Vector3.up);
-        transform.rotation = Quaternion.Euler(0f, targetRotation.eulerAngles.y, 0f);
-    }
-
-    void OnDrawGizmosSelected()
-    {
-        if (player1 != null && player2 != null)
+        Vector3 dir = new Vector3(center.x - transform.position.x, 0f, center.z - transform.position.z);
+        if (dir.sqrMagnitude > 0.0001f)
         {
-            Vector3 center = (player1.position + player2.position) * 0.5f;
-            Gizmos.color = Color.green;
-            Gizmos.DrawWireSphere(center, 0.5f);
+            float yaw = Mathf.Atan2(dir.x, dir.z) * Mathf.Rad2Deg;
+            transform.rotation = Quaternion.Euler(0f, yaw, 0f);
         }
     }
 }
