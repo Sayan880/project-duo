@@ -48,7 +48,7 @@ public class LevelEndManager : NetworkBehaviour
     {
         if (player1Reached.Value && player2Reached.Value)
         {
-
+            LoadNextLevel();
         }
     }
 }
