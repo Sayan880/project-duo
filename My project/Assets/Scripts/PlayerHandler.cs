@@ -1,6 +1,6 @@
 using UnityEngine;
 using Unity.Netcode;
-
+using UnityEngine.SceneManagement;
 public class PlayerHandler : NetworkBehaviour
 {
     public Material pm;
@@ -17,7 +17,7 @@ public class PlayerHandler : NetworkBehaviour
         NetworkVariableReadPermission.Everyone,
         NetworkVariableWritePermission.Server
     );
-
+    
     public override void OnNetworkSpawn()
     {
         playerColor.OnValueChanged += OnColorChanged;

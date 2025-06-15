@@ -346,7 +346,7 @@ GameObject:
   - component: {fileID: 1896364627}
   - component: {fileID: 1896364626}
   - component: {fileID: 1896364625}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: fog
   m_TagString: Untagged
   m_Icon: {fileID: 0}
