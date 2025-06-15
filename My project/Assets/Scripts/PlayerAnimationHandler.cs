@@ -13,22 +13,24 @@ public class PlayerAnimationHandler : NetworkBehaviour
     [Tooltip("Radius fuer die Boden-Abfrage.")]
     public float groundCheckRadius = 0.2f;
 
-    Animator animator;
-    Rigidbody rb;
-    bool wasGrounded = true;
+    private Animator animator;
+    private Rigidbody rb;
+    private bool wasGrounded = true;
 
     void Start()
     {
-
         if (!IsLocalPlayer) return;
 
         animator = GetComponent<Animator>();
+        if (animator == null)
+            animator = GetComponentInChildren<Animator>();
+
         rb = GetComponent<Rigidbody>();
     }
 
     void Update()
     {
-        if (!IsLocalPlayer) return;
+        if (!IsLocalPlayer || animator == null || rb == null) return;
 
         bool isGrounded = Physics.CheckSphere(
             groundCheck.position,
@@ -44,6 +46,7 @@ public class PlayerAnimationHandler : NetworkBehaviour
 
         bool jumpStart = jumpPressed && isGrounded;
         bool landed = !wasGrounded && isGrounded;
+
         bool isFalling = !isGrounded && rb.linearVelocity.y < -0.1f;
 
         animator.SetBool("isWalking", isMoving && !isSprinting);
