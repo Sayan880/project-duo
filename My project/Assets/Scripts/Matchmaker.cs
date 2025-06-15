@@ -28,7 +28,7 @@ public class Matchmaker : NetworkBehaviour
     public string LobbyId;
     public string LobbyName = "LobbyName";
     public string JoinKey = "jointKey";
-    public string mapId = "MainScene";
+    public string mapId = "Level1";
 
     private List<ulong> playersIds = new List<ulong>();
 

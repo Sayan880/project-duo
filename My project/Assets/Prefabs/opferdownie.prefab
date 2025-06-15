@@ -23,7 +23,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &5922150234114712300
 Transform:
   m_ObjectHideFlags: 0
@@ -155,7 +155,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 89690858
+  GlobalObjectIdHash: 4047626842
   InScenePlacedSourceGlobalObjectIdHash: 1593000679
   DeferredDespawnTick: 0
   Ownership: 1
@@ -227,7 +227,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
-  cam: {fileID: 4879821696748378886}
   pm: {fileID: 0}
   move: {fileID: 761622620143412621}
   PlayerID:
@@ -244,6 +243,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f51d9a2987592e34c8ddcdd79e9fbeec, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
   cameraTransform: {fileID: 0}
   groundCheck: {fileID: 0}
   groundMask:

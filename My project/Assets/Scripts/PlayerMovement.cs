@@ -2,6 +2,7 @@ using Unity.Netcode;
 using Unity.Netcode.Components;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using System.Collections;
 
 [RequireComponent(typeof(Rigidbody))]
 [RequireComponent(typeof(NetworkTransform))] // fuer Position/Rotation-Sync
@@ -43,7 +44,7 @@ public class PlayerMovement : NetworkBehaviour
     public override void OnNetworkSpawn()
     {
         if (!IsLocalPlayer) return;
-        TryAssignCamera();
+        StartCoroutine(TryAssignCamera());
     }
 
     void Start()
@@ -58,8 +59,9 @@ public class PlayerMovement : NetworkBehaviour
             Debug.Log("Ich bin NICHT der lokale Spieler: " + OwnerClientId);
     }
 
-    void TryAssignCamera()
-    {
+    IEnumerator TryAssignCamera()
+    {   
+        yield return new WaitForSeconds(0.1f);  
         if (Camera.main != null)
         {
             cameraTransform = Camera.main.transform;
@@ -95,9 +97,12 @@ public class PlayerMovement : NetworkBehaviour
 
         if (moveDirection.sqrMagnitude >= 0.01f)
         {
-            Quaternion targetRot = Quaternion.LookRotation(moveDirection);
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRot,
-                                                  rotationSpeed * Time.deltaTime);
+            Vector3 lookDir = new Vector3(moveDirection.x, 0, moveDirection.z);
+            if (lookDir.sqrMagnitude > 0.001f)
+            {
+                Quaternion targetRot = Quaternion.LookRotation(lookDir);
+                transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, rotationSpeed * Time.deltaTime);
+            }
         }
 
         if (isGrounded && Input.GetButtonDown("Jump"))

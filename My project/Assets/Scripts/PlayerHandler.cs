@@ -1,48 +1,77 @@
+// PlayerHandler.cs
 using UnityEngine;
 using Unity.Netcode;
 
 public class PlayerHandler : NetworkBehaviour
 {
-    //public GameObject cam;
     public Material pm;
     public PlayerMovement move;
+
+    // Wird vom Spawner gesetzt vor Spawn
+    public Vector3 spawnPosition;
+
     public NetworkVariable<int> PlayerID = new NetworkVariable<int>();
     public static int pCount;
 
+    public NetworkVariable<Color> playerColor = new NetworkVariable<Color>(
+        Color.white,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Server
+    );
+
     public override void OnNetworkSpawn()
     {
+        playerColor.OnValueChanged += OnColorChanged;
+
         if (IsServer)
         {
-            PlayerID.Value = pCount;
-            pCount++;
+            PlayerID.Value = pCount++;
+            playerColor.Value = (PlayerID.Value == 0) ? Color.green : Color.red;
         }
 
-        if (IsLocalPlayer)
+        gameObject.name = $"Player{PlayerID.Value + 1}";
+
+        // Position setzen beim Netzwerk-Spawn
+        transform.position = spawnPosition;
+
+        if (IsOwner)
         {
             move.enabled = true;
-            transform.Find("HumanM_BodyMesh").GetComponent<SkinnedMeshRenderer>().material = Material.Instantiate(pm);
-            transform.Find("HumanM_BodyMesh").GetComponent<SkinnedMeshRenderer>().material.color = Color.green;
-            //cam.SetActive(true);
 
+            if (move.cameraTransform == null && Camera.main != null)
+            {
+                move.cameraTransform = Camera.main.transform;
+            }
         }
         else
         {
-            Destroy(move);
-            //Destroy(cam);
-            transform.Find("HumanM_BodyMesh").GetComponent<SkinnedMeshRenderer>().material = Material.Instantiate(pm);
-            transform.Find("HumanM_BodyMesh").GetComponent<SkinnedMeshRenderer>().material.color = Color.red;
-
+            move.enabled = false;
         }
+
+        ApplyColor(playerColor.Value);
     }
 
-    
+    private void OnColorChanged(Color previousValue, Color newValue)
+    {
+        ApplyColor(newValue);
+    }
+
+    private void ApplyColor(Color color)
+    {
+        var renderer = transform.Find("HumanM_BodyMesh")?.GetComponent<SkinnedMeshRenderer>();
+        if (renderer == null) return;
+
+        var mat = Material.Instantiate(pm);
+        mat.color = color;
+        renderer.material = mat;
+    }
+
     public override void OnDestroy()
     {
-        NetworkObject.Despawn(true);
-
-    }
-    public override void OnNetworkDespawn()
-    {
-        NetworkObject.Despawn();
+        if (playerColor != null)
+        {
+            playerColor.OnValueChanged -= OnColorChanged;
+        }
+        base.OnDestroy();
     }
 }
