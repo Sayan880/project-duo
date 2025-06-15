@@ -6,6 +6,7 @@ public class SideScrollerCamera : MonoBehaviour
     public string player2Name = "Player2";
     private Transform player1;
     private Transform player2;
+
     public Vector3 offset = new Vector3(-10f, 5f, 0f);
     [Range(0.01f, 1f)] public float smoothSpeed = 0.1f;
 
@@ -24,9 +25,14 @@ public class SideScrollerCamera : MonoBehaviour
         if (player1 == null || player2 == null) return;
 
         Vector3 center = (player1.position + player2.position) * 0.5f;
-        Vector3 target = new Vector3(center.x + offset.x, center.y + offset.y, center.z + offset.z);
-        transform.position = Vector3.Lerp(transform.position, target, smoothSpeed);
-        transform.LookAt(center);
+        Vector3 targetPos = center + offset;
+        transform.position = Vector3.Lerp(transform.position, targetPos, smoothSpeed);
+
+        Vector3 lookAtPos = center;
+        lookAtPos.y = transform.position.y;
+        Vector3 direction = (lookAtPos - transform.position).normalized;
+        Quaternion targetRotation = Quaternion.LookRotation(direction, Vector3.up);
+        transform.rotation = Quaternion.Euler(0f, targetRotation.eulerAngles.y, 0f);
     }
 
     void OnDrawGizmosSelected()
