@@ -1,47 +1,70 @@
 using UnityEngine;
 using System.Collections;
 using Unity.Services.Lobbies;
+
+// Verwalter für die Lobby-Funktionalität.
+// Diese Klasse sendet regelmäßig ein "Heartbeat"-Signal, damit die Lobby aktiv bleibt.
+
 public class LobbyManager : MonoBehaviour
 {
+    // Singleton-Instanz, damit nur ein LobbyManager existiert
     public static LobbyManager instance;
+
+    // Die aktuelle Lobby-ID
     public string lobbyID;
 
+    // Stellt sicher, dass nur ein LobbyManager existiert.
+    // Objekt bleibt über Szenen hinweg erhalten.
     private void Awake()
     {
         if (instance != null && instance != this)
         {
-            Destroy(gameObject);
+            Destroy(gameObject); // Falls schon eine Instanz existiert -> zerstören
             return;
         }
 
         instance = this;
-        DontDestroyOnLoad(gameObject);
+        DontDestroyOnLoad(gameObject); // Objekt bleibt beim Szenenwechsel erhalten
     }
 
-    private void OnDestroy() {
+    // Setzt Singleton-Instanz zurück, wenn dieses Objekt zerstört wird.
+    private void OnDestroy()
+    {
         if (instance == this)
         {
             instance = null;
         }
     }
 
-    public void StartHeartbeat(string lobbyID) {
+    // Startet die regelmäßige Übermittlung von Heartbeat-Pings für die übergebene Lobby.
+    public void StartHeartbeat(string lobbyID)
+    {
         this.lobbyID = lobbyID;
         StartCoroutine(SendHeartbeatC());
     }
 
-    public void StopHeartbeat() {
+    
+    // Stoppt alle Heartbeat-Übertragungen.
+    public void StopHeartbeat()
+    {
         StopAllCoroutines();
         lobbyID = "";
     }
-    private IEnumerator SendHeartbeatC() {
+
+    // Coroutine: Wartet 15 Sekunden, dann sendet einen Heartbeat.
+    // Endlosschleife, um kontinuierlich Heartbeats  alle 15s zu senden.
+    private IEnumerator SendHeartbeatC()
+    {
         while (true)
         {
             yield return new WaitForSeconds(15);
+            SendHeartbeatPing(); // Manuell alle 15 Sekunden Ping senden
         }
     }
 
-    private async void SendHeartbeatPing() {
+    // Sendet asynchron einen Heartbeat-Ping an die Lobby, um sie aktiv zu halten.
+    private async void SendHeartbeatPing()
+    {
         if (!string.IsNullOrEmpty(lobbyID))
         {
             try
@@ -50,8 +73,8 @@ public class LobbyManager : MonoBehaviour
             }
             catch (System.Exception e)
             {
-                Debug.LogError($"Fehler heartbeat: {e.Message}");
+                Debug.LogError($"Fehler beim Heartbeat: {e.Message}");
             }
-        }   
+        }
     }
 }

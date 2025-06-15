@@ -12,10 +12,22 @@ using Unity.Services.Lobbies.Models;
 using Unity.Services.Relay;
 using Unity.Services.Relay.Models;
 
-
+/*
+ Dieses Script verwaltet die Multiplayer-Lobby und Netzwerkverbindungen.
+  
+ Aufgaben:
+ - Spieler authentifizieren und verbinden (Unity Services)
+ - Erstellen und Verwalten von Spiel-Lobbies (Host-Seite)
+ - Beitreten von Lobbies (Client-Seite)
+ - Überwachung und Verwaltung der Spieler-Verbindungen
+ - Starten des Spiels und Laden der Spielszene
+  
+ Verwendet Unity Services (Lobbies, Relay, Authentication) und Unity Netcode für Multiplayer.
+ Die Debug Logs und System Exceptions waren nötig um Fehler während des Codens einfach herauszulesen.
+ */
 public class Matchmaker : NetworkBehaviour
 {
-
+    [Header("UI Sachen")]
     public TMP_InputField JoinKeyInput, ShowJoinKey;
     public GameObject WaitHost, WaitClient;
     public TextMeshProUGUI playerCount;
@@ -23,6 +35,7 @@ public class Matchmaker : NetworkBehaviour
 
     private static UnityTransport trans;
 
+    [Header("Einstellungen")]
     public string PlayerId { get; private set; }
     public int maxPlayer = 2;
     public string LobbyId;
@@ -32,57 +45,58 @@ public class Matchmaker : NetworkBehaviour
 
     private List<ulong> playersIds = new List<ulong>();
 
-
     private async void Start()
     {
-        await Login();
-
+        await Login(); // Automatischer Login bei Spielstart
     }
 
-    private void OnDestroy() {
+    private void OnDestroy()
+    {
         try
         {
-            StopAllCoroutines();
-
+            StopAllCoroutines(); // Beendet alle laufenden Prozesse
             NetworkManager.Singleton.OnClientConnectedCallback -= OnClientConnect;
             NetworkManager.Singleton.OnClientDisconnectCallback -= OnClientDisconnect;
         }
         catch (System.Exception e)
         {
             Debug.LogError(e.Message);
-            
         }
     }
+
+    // Meldet den Spieler anonym bei Unity-Services an, speichert deren ID, schaut das nur angemeldete Spieler interagieren
     public async Task Login()
-    {
+    { //Initialisiere UnityServices
         if (UnityServices.State == ServicesInitializationState.Uninitialized)
         {
             var Options = new InitializationOptions();
-
             Options.SetProfile(UnityEngine.Random.Range(0, 100000) + "profile");
-
             await UnityServices.InitializeAsync(Options);
-
         }
-        if (!AuthenticationService.Instance.IsSignedIn) {
+
+        if (!AuthenticationService.Instance.IsSignedIn)
+        {
             await AuthenticationService.Instance.SignInAnonymouslyAsync();
-
             PlayerId = AuthenticationService.Instance.PlayerId;
-
         }
+
         Debug.Log("Player Id" + PlayerId);
         DebugLog.text = "PlayerId: " + PlayerId;
-
     }
 
-    private void OnClientConnect(ulong clientId) {
-        if (NetworkManager.Singleton.ConnectedClients.ContainsKey(clientId)) {
+    // Wird aufgerufen, wenn sich ein Client verbindet, Client wird zur Spielerliste hinzugefügt
+    private void OnClientConnect(ulong clientId)
+    {
+        if (NetworkManager.Singleton.ConnectedClients.ContainsKey(clientId))
+        {
             Debug.Log("Client joined, ID:" + clientId);
             playersIds.Add(clientId);
         }
     }
 
-    private async void OnClientDisconnect(ulong clientId) {
+    // Wird aufgerufen, wenn ein Client getrennt wird, gegenteil des verbindens logischerweise
+    private async void OnClientDisconnect(ulong clientId)
+    {
         if (!NetworkManager.Singleton.IsServer) return;
 
         if (NetworkManager.Singleton.ConnectedClients.TryGetValue(clientId, out var client))
@@ -97,37 +111,44 @@ public class Matchmaker : NetworkBehaviour
         await LobbyService.Instance.RemovePlayerAsync(LobbyId, AuthenticationService.Instance.PlayerId);
     }
 
-    public void HostCreateLobby() {
+    // UI-Button: Lobby hosten und Events registrieren
+    public void HostCreateLobby()
+    {
         CreateLobby();
         NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnect;
         NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnect;
     }
 
-    public void GoInPlayModeLobby() {
+    // Startet das Spiel aus der Lobby heraus
+    public void GoInPlayModeLobby()
+    {
         foreach (ulong pid in playersIds)
         {
             GameObject player = Instantiate(NetworkManager.Singleton.NetworkConfig.Prefabs.NetworkPrefabsLists[0].PrefabList[0].Prefab);
-            player.GetComponent<NetworkObject>().SpawnAsPlayerObject(pid);
-
+            player.GetComponent<NetworkObject>().SpawnAsPlayerObject(pid);//Spieler spawnen
         }
 
-        NetworkManager.Singleton.SceneManager.LoadScene(mapId, UnityEngine.SceneManagement.LoadSceneMode.Single);
-
-        StopAllCoroutines();
+        NetworkManager.Singleton.SceneManager.LoadScene(mapId, UnityEngine.SceneManagement.LoadSceneMode.Single);//In die Scene laden des ersten levels
+        StopAllCoroutines(); // Stoppt Lobby-Monitoring
     }
 
-    void ChangePlayerCount(string count, string max) {
-        playerCount.text = "Players:" + count + "MaxSlots:" + max;
+    // UI-Anzeige Spieleranzahl
+    void ChangePlayerCount(string count, string max)
+    {
+        playerCount.text = "Players:" + count + " MaxSlots:" + max;
     }
 
-    private async Task CreateLobby() {
+    // Lobby erstellen, Relay erstellen, UI Sachen
+    private async Task CreateLobby()
+    {
         DebugLog.text = "Try to create lobby";
         playerCount.text = "Wait for conn";
+
         try
         {
             WaitHost.SetActive(true);
-            DebugLog.text = "Create Lobby:" + lobbyNameInput.text + "as host";
             LobbyName = lobbyNameInput.text;
+            DebugLog.text = "Create Lobby: " + LobbyName + " as host";
 
             var a = await RelayService.Instance.CreateAllocationAsync(maxPlayer);
             var joinCode = await RelayService.Instance.GetJoinCodeAsync(a.AllocationId);
@@ -136,7 +157,7 @@ public class Matchmaker : NetworkBehaviour
             {
                 Data = new Dictionary<string, DataObject>
                 {
-                    {"ID" , new DataObject(DataObject.VisibilityOptions.Public, joinCode)}
+                    { "ID", new DataObject(DataObject.VisibilityOptions.Public, joinCode) }
                 }
             };
 
@@ -145,31 +166,30 @@ public class Matchmaker : NetworkBehaviour
 
             if (trans == null)
                 trans = NetworkManager.Singleton.GetComponent<UnityTransport>();
-            trans.SetHostRelayData(a.RelayServer.IpV4,
+            trans.SetHostRelayData(
+                a.RelayServer.IpV4,
                 (ushort)a.RelayServer.Port,
                 a.AllocationIdBytes,
                 a.Key,
                 a.ConnectionData);
 
             NetworkManager.Singleton.StartHost();
-
             ChangePlayerCount(lobby.Players.Count.ToString(), lobby.MaxPlayers.ToString());
 
             LobbyManager.instance.StartHeartbeat(LobbyId);
             ShowJoinKey.text = LobbyId;
-            StartCoroutine(MLC());
-
-
+            StartCoroutine(MLC()); // Startet Monitoring-Schleife
         }
         catch (System.Exception e)
         {
             Debug.LogError(e.Message);
-            DebugLog.text = "failed creatinglobby";
-
+            DebugLog.text = "failed creating lobby";
         }
     }
 
-    IEnumerator MLC() {
+    // Coroutine: Alle 5 Sekunden Lobby-Status checken
+    IEnumerator MLC()
+    {
         while (true)
         {
             yield return new WaitForSeconds(5);
@@ -177,21 +197,23 @@ public class Matchmaker : NetworkBehaviour
         }
     }
 
-    async void MonitorLobby() {
+    // Lobby-Status von Unity-Lobby-API abrufen
+    async void MonitorLobby()
+    {
         try
         {
             var lobby = await LobbyService.Instance.GetLobbyAsync(LobbyId);
-
             ChangePlayerCount(lobby.Players.Count.ToString(), lobby.MaxPlayers.ToString());
         }
         catch (LobbyServiceException e)
         {
-
-            Debug.LogError("LSE Reason: " + e.Reason + "EXCEPTION" + e.Message);
+            Debug.LogError("LSE Reason: " + e.Reason + " EXCEPTION: " + e.Message);
         }
     }
 
-    public async void CloseLobby() {
+    // Lobby schließen, Spieler entfernen, Netzwerk zurücksetzen
+    public async void CloseLobby()
+    {
         try
         {
             await LobbyService.Instance.DeleteLobbyAsync(LobbyId);
@@ -211,11 +233,15 @@ public class Matchmaker : NetworkBehaviour
         }
     }
 
-    public void onChangeJoinKey() {
+    // Zeigt den JoinKey in der UI an
+    public void onChangeJoinKey()
+    {
         ShowJoinKey.text = LobbyId;
     }
 
-    public async void JoinLobby() {
+    // Tritt einer bestehenden Lobby mit JoinKey bei
+    public async void JoinLobby()
+    {
         DebugLog.text = "Try Join: " + JoinKeyInput.text;
 
         try
@@ -233,13 +259,13 @@ public class Matchmaker : NetworkBehaviour
                 DebugLog.text += "No Lobby found for Key: " + JoinKeyInput.text;
                 return;
             }
-            DebugLog.text = "connected to Lobby = " + JoinKeyInput.text;
 
             LobbyId = joinedLobby.Id;
-
             JoinKey = joinedLobby.Data["ID"].Value;
+            DebugLog.text = "connected to Lobby = " + JoinKey;
 
             var a = await RelayService.Instance.JoinAllocationAsync(JoinKey);
+
             if (trans == null)
                 trans = NetworkManager.Singleton.GetComponent<UnityTransport>();
             trans.SetClientRelayData(
@@ -249,31 +275,32 @@ public class Matchmaker : NetworkBehaviour
                 a.Key,
                 a.ConnectionData,
                 a.HostConnectionData);
+
             NetworkManager.Singleton.StartClient();
 
             WaitClient.SetActive(true);
-            StartCoroutine(CLSCo());
-
-            DebugLog.text = "Joined Lobby = " + JoinKeyInput.text;
-
+            StartCoroutine(CLSCo()); // Client Lobby State Coroutine
 
         }
         catch (System.Exception e)
         {
             WaitClient.SetActive(false);
             DebugLog.text += "\nException " + e.Message + " Stacktrace = " + e.StackTrace;
-
         }
     }
-    IEnumerator CLSCo() {
+
+    // die vorher erwähnte coroutine, ein cooldown
+    IEnumerator CLSCo()
+    {
         while (true)
         {
             yield return new WaitForSeconds(5);
-
         }
     }
 
-    private async void CheckLobbyState() {
+    // Überprüft, ob Lobby noch existiert
+    private async void CheckLobbyState()
+    {
         try
         {
             await LobbyService.Instance.GetLobbyAsync(LobbyId);
@@ -282,13 +309,11 @@ public class Matchmaker : NetworkBehaviour
         {
             if (e.Reason == LobbyExceptionReason.LobbyNotFound)
             {
-            WaitClient.SetActive(false);
-                DebugLog.text += "Lobby closeddd";
+                WaitClient.SetActive(false);
+                DebugLog.text += "Lobby closed";
                 Debug.Log("Lobby closed " + AuthenticationService.Instance.PlayerId);
-
                 StopAllCoroutines();
             }
-            
         }
-     }
+    }
 }

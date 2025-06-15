@@ -5,33 +5,33 @@ using UnityEngine.SceneManagement;
 using System.Collections;
 
 [RequireComponent(typeof(Rigidbody))]
-[RequireComponent(typeof(NetworkTransform))] // fuer Position/Rotation-Sync
+[RequireComponent(typeof(NetworkTransform))] // Synchronisiert Position und Rotation im Netzwerk
 public class PlayerMovement : NetworkBehaviour
 {
     [Header("Referenzen")]
-    [Tooltip("Ziehen: Hauptkamera (Main Camera) hierher.")]
+    [Tooltip("Main Camera (Ziehen erforderlich, z.B. durch Script automatisch).")]
     public Transform cameraTransform;
 
-    [Tooltip("Ziehen: GroundCheck-Objekt (als Kind-Transform des Spielers), positioniert nahe der Fuesse.")]
+    [Tooltip("Transform am Fuß des Spielers, prüft ob Bodenkontakt besteht.")]
     public Transform groundCheck;
 
-    [Tooltip("Legen: Auf welche Layer der Boden gehoert (z.B. Default).")]
+    [Tooltip("Layer, die als Boden erkannt werden sollen.")]
     public LayerMask groundMask;
 
-    [Header("Bewegungs-Einstellungen")]
-    [Tooltip("Normale Gehgeschwindigkeit (Einheiten pro Sekunde).")]
+    [Header("Bewegungseinstellungen")]
+    [Tooltip("Normale Laufgeschwindigkeit.")]
     public float walkSpeed = 5f;
 
-    [Tooltip("Sprintgeschwindigkeit (Einheiten pro Sekunde).")]
+    [Tooltip("Sprintgeschwindigkeit bei gedrückter Shift-Taste.")]
     public float sprintSpeed = 9f;
 
-    [Tooltip("Sprunghoehe (ungefuehr, in Unity-Einheiten).")]
+    [Tooltip("Höhe des Sprungs in Unity-Einheiten.")]
     public float jumpHeight = 1.5f;
 
-    [Tooltip("Wie schnell sich der Spieler zur Bewegungsrichtung dreht.")]
+    [Tooltip("Wie schnell sich der Spieler in Bewegungsrichtung dreht.")]
     public float rotationSpeed = 10f;
 
-    [Tooltip("Radius fuer die Boden-Abfrage (GroundCheck).")]
+    [Tooltip("Radius der Bodenerkennung (GroundCheck).")]
     public float groundCheckRadius = 0.2f;
 
     private Rigidbody rb;
@@ -44,14 +44,15 @@ public class PlayerMovement : NetworkBehaviour
     public override void OnNetworkSpawn()
     {
         if (!IsLocalPlayer) return;
-        StartCoroutine(TryAssignCamera());
+        StartCoroutine(TryAssignCamera()); // Versucht Kamera zu finden
     }
 
     void Start()
     {
         rb = GetComponent<Rigidbody>();
-        rb.constraints = RigidbodyConstraints.FreezeRotationX
-                       | RigidbodyConstraints.FreezeRotationZ;
+
+        // Rotation in X und Z verhindern (Spieler kippt nicht um)
+        rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
 
         if (IsLocalPlayer)
             Debug.Log("Ich bin der lokale Spieler: " + OwnerClientId);
@@ -59,17 +60,19 @@ public class PlayerMovement : NetworkBehaviour
             Debug.Log("Ich bin NICHT der lokale Spieler: " + OwnerClientId);
     }
 
+    // Kamera zuweisen, nachdem alle Objekte initialisiert sind
     IEnumerator TryAssignCamera()
-    {   
-        yield return new WaitForSeconds(0.1f);  
+    {
+        yield return new WaitForSeconds(0.1f);
+
         if (Camera.main != null)
         {
             cameraTransform = Camera.main.transform;
-            Debug.Log("CameraTransform gesetzt");
+            Debug.Log("Kamera erfolgreich zugewiesen.");
         }
         else
         {
-            Debug.LogWarning("Keine Kamera mit MainCamera-Tag gefunden!");
+            Debug.LogWarning("Keine Kamera mit 'MainCamera'-Tag gefunden!");
         }
     }
 
@@ -77,13 +80,16 @@ public class PlayerMovement : NetworkBehaviour
     {
         if (!IsLocalPlayer) return;
 
+        // Prüft, ob Spieler am Boden ist
         isGrounded = Physics.CheckSphere(groundCheck.position, groundCheckRadius, groundMask);
 
         horizontalInput = Input.GetAxis("Horizontal");
         verticalInput = Input.GetAxis("Vertical");
 
+        // Richtungen basierend auf der Kameraperspektive
         Vector3 camForward = cameraTransform.forward;
         Vector3 camRight = cameraTransform.right;
+
         camForward.y = 0f;
         camRight.y = 0f;
         camForward.Normalize();
@@ -92,9 +98,11 @@ public class PlayerMovement : NetworkBehaviour
         moveDirection = camRight * horizontalInput + camForward * verticalInput;
         moveDirection.Normalize();
 
+        // Sprint-Check
         bool isSprinting = Input.GetKey(KeyCode.LeftShift);
         currentSpeed = isSprinting ? sprintSpeed : walkSpeed;
 
+        // Spieler dreht sich zur Bewegungsrichtung
         if (moveDirection.sqrMagnitude >= 0.01f)
         {
             Vector3 lookDir = new Vector3(moveDirection.x, 0, moveDirection.z);
@@ -105,6 +113,7 @@ public class PlayerMovement : NetworkBehaviour
             }
         }
 
+        // Springen
         if (isGrounded && Input.GetButtonDown("Jump"))
         {
             float jumpVelocity = Mathf.Sqrt(jumpHeight * 2f * Mathf.Abs(Physics.gravity.y));
@@ -118,12 +127,14 @@ public class PlayerMovement : NetworkBehaviour
     {
         if (!IsLocalPlayer) return;
 
+        // Bewegung umsetzen (inkl. bestehender Y-Geschwindigkeit beim Springen)
         Vector3 velocity = rb.linearVelocity;
         Vector3 targetVel = moveDirection * currentSpeed;
         targetVel.y = velocity.y;
         rb.linearVelocity = targetVel;
     }
 
+    // Zeigt GroundCheck-Radius im Editor an (nur zur Kontrolle)
     void OnDrawGizmosSelected()
     {
         if (groundCheck != null)
