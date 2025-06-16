@@ -295,6 +295,7 @@ public class Matchmaker : NetworkBehaviour
         while (true)
         {
             yield return new WaitForSeconds(5);
+            CheckLobbyState(); //prüft lobbyzustand
         }
     }
 
